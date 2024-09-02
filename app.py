@@ -40,15 +40,7 @@ async def send_message(recipient, data):
         except aiohttp.ClientConnectorError as e:
             return {"status": 500, "response": str(e)}
 
-session_ids = {}
-def generate_session_id(phone_number):
-    url = "https://testapi.unomiru.com/api/Waysbot/generate_sessionid"
-    response = requests.request("GET", url)
-    if response.status_code == 200:
-        session_id=response.text 
-        return session_id
-    else:
-        return None
+
 
 @app.route("/send-message", methods=["POST"])
 def send_whatsapp_message():
@@ -154,14 +146,28 @@ def generate_response(response):
         'Content-Type': 'application/json'
     }
     data = {'user_input': response}
-    api_response = requests.post('https://ae.arrive.waysdatalabs.com/api/chat', headers=headers, data=json.dumps(data))
-    if api_response.status_code == 200:
+
+    try:
+        api_response = requests.post(
+            'https://ae.arrive.waysdatalabs.com/api/chat', 
+            headers=headers, 
+            data=json.dumps(data),
+            timeout=10  # Adding a timeout for the request
+        )
+        api_response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx, 5xx)
+        
         response_json = api_response.json()  # Parse the JSON response
         c_response = response_json.get('response')
+        if c_response is None:
+            logging.error("API response did not contain 'response' key.")
+            return None
+        
         return c_response
-    else:
-        logging.error(f"Error calling API. Status code: {api_response.status_code}, Error response: {api_response.text}")
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error calling API: {e}")
         return None
+
 
 
 def send_messages(data):
