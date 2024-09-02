@@ -134,12 +134,14 @@ def log_http_response(response):
 
 def get_text_message_input(recipient, text):
     return json.dumps({
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": recipient,
-        "type": "text",
-        "text": {"preview_url": False, "body": text},
-    })
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": 9007595650,
+    "type": "text",
+    "text": {
+        "body": text
+    }
+})
 
 def generate_response(response):
     headers = {
