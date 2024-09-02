@@ -276,7 +276,7 @@ import subprocess
 import threading
 def run_ngrok():
     try:
-        subprocess.run(["ngrok", "http", "--domain=locust-upward-easily.ngrok-free.app", "8005"], check=True)
+        subprocess.run(["ngrok", "http --authtoken=2kHvsJYgyCk9tLWPrWsRYCAMYwG_pvxhJC8bsEFHptmKACfL", "--domain=locust-upward-easily.ngrok-free.app", "8005"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
         # Handle the error, if needed
