@@ -202,7 +202,7 @@ def process_whatsapp_message(body):
     message = body["entry"][0]["changes"][0]["value"]["messages"][0]
     message_body = message["text"]["body"]
     sender_number = message["from"]
-    response = generate_response(sender_number, message_body)
+    response = generate_response(message_body)
     data = get_text_message_input(sender_number, response)
     send_messages(data)
 
