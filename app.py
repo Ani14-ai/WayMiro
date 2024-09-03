@@ -13,15 +13,38 @@ import subprocess
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import pyodbc
 app = Flask(__name__)
 load_dotenv()
 CORS(app, resources={"/*": {"origins": "*"}})
+db_connection_string = (
+    "Driver={ODBC Driver 17 for SQL Server};"
+    "Server=103.239.89.99,21433"
+    "Database=ArriveChatAppDB;"
+    "UID=ArriveDBUsr;"
+    "PWD=Arrive@pas12;"
+    "Encrypt=yes;"
+    "TrustServerCertificate=yes;"
+)
 ACCESS_TOKEN = os.getenv("access_token")
 PHONE_NUMBER_ID_1 = os.getenv("phone_number_id_1")
 PHONE_NUMBER_ID_2 = os.getenv("phone_number_id_2")
 ng=os.getenv("authtoken")
 VERSION = "v20.0"
-# Send a custom text WhatsApp message asynchronously
+
+def log_chat_to_db(user_input, bot_response, phone_number):
+    try:
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+            query = """
+                INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number)
+                VALUES (?, ?, ?)
+            """
+            cursor.execute(query, (user_input, bot_response, phone_number))
+            conn.commit()
+    except pyodbc.Error as e:
+        logging.error(f"Failed to log chat to database: {e}")
+        
 async def send_message(recipient, data):
     headers = {
         "Content-type": "application/json",
@@ -212,6 +235,9 @@ def process_whatsapp_message(body):
     sender_number = message["from"]
     response = generate_response(message_body)
     data = get_text_message_input(sender_number, response)
+    bot_response = generate_response(message_body)
+    log_chat_to_db(user_input=message_body, bot_response=bot_response, phone_number=sender_number)
+    data = get_text_message_input(sender_number, bot_response)
     send_messages(data)
 
 def is_valid_whatsapp_message(body):
