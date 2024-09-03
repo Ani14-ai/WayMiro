@@ -19,12 +19,10 @@ load_dotenv()
 CORS(app, resources={"/*": {"origins": "*"}})
 db_connection_string = (
     "Driver={ODBC Driver 17 for SQL Server};"
-    "Server=103.239.89.99,21433"
+    "Server=103.239.89.99,21433;"
     "Database=ArriveChatAppDB;"
     "UID=ArriveDBUsr;"
     "PWD=Arrive@pas12;"
-    "Encrypt=yes;"
-    "TrustServerCertificate=yes;"
 )
 ACCESS_TOKEN = os.getenv("access_token")
 PHONE_NUMBER_ID_1 = os.getenv("phone_number_id_1")
