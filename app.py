@@ -157,7 +157,7 @@ def get_text_message_input(recipient, text):
     return json.dumps({
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
-    "to": 9007595650,
+    "to": recipient,
     "type": "text",
     "text": {
         "body": text
