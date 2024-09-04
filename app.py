@@ -266,6 +266,69 @@ def signature_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route("/api/dashboard", methods=["GET"])
+def get_unique_phone_numbers():
+    try:
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+            query = "SELECT DISTINCT phone_number FROM tbWhatsapp_Messages"
+            cursor.execute(query)
+            phone_numbers = [row.phone_number for row in cursor.fetchall()]
+        return jsonify({"phone_numbers": phone_numbers}), 200
+    except pyodbc.Error as e:
+        logging.error(f"Failed to retrieve unique phone numbers: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
+
+@app.route("/api/fetch_chat", methods=["POST"])
+def fetch_chat_by_phone_number():
+    try:
+        content = request.get_json()
+        phone_number = content.get("phone_number")
+
+        if phone_number:
+            with pyodbc.connect(db_connection_string) as conn:
+                cursor = conn.cursor()
+                query = """
+                    SELECT user_input, bot_response, timestamp
+                    FROM tbWhatsapp_Messages
+                    WHERE phone_number = ?
+                    ORDER BY timestamp DESC
+                """
+                cursor.execute(query, phone_number)
+                chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]
+            return jsonify({"chats": chats}), 200
+        else:
+            return jsonify({"error": "Phone number is required"}), 400
+    except pyodbc.Error as e:
+        logging.error(f"Failed to fetch chats: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
+
+@app.route("/api/save_response", methods=["POST"])
+def save_response():
+    try:
+        content = request.get_json()
+        phone_number = content.get("phone_number")
+        bot_response = content.get("bot_response")
+
+        if phone_number and bot_response:
+            with pyodbc.connect(db_connection_string) as conn:
+                cursor = conn.cursor()
+                query = """
+                    INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number)
+                    VALUES ('NA', ?, ?)
+                """
+                cursor.execute(query, bot_response, phone_number)
+                conn.commit()
+            return jsonify({"status": "success", "message": "Response saved successfully"}), 200
+        else:
+            return jsonify({"error": "Phone number and bot response are required"}), 400
+    except pyodbc.Error as e:
+        logging.error(f"Failed to save response: {e}")
+        return jsonify({"error": "Failed to save data"}), 500
+
+
+
+
 # Views
 
 @app.route("/webhook", methods=["GET"])
