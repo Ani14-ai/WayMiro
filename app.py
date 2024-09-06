@@ -315,7 +315,7 @@ def save_response():
                 cursor = conn.cursor()
                 query = """
                     INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number)
-                    VALUES (?, ?, ?)
+                    VALUES ('ADMIN', ?, ?)
                 """
                 cursor.execute(query, bot_response, phone_number)
                 conn.commit()
