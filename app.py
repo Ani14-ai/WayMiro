@@ -274,10 +274,16 @@ def get_unique_phone_numbers():
             query = "SELECT DISTINCT phone_number FROM tbWhatsapp_Messages"
             cursor.execute(query)
             phone_numbers = [row.phone_number for row in cursor.fetchall()]
-        return jsonify({"phone_numbers": phone_numbers}), 200
+        phone_numbers_json = json.dumps(phone_numbers)
+
+        return jsonify({
+            "phoneNumbersJson": phone_numbers_json,  
+            "totalPhoneNumbers": len(phone_numbers)   
+        }), 200
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 @app.route("/api/fetch_chat", methods=["POST"])
 def fetch_chat_by_phone_number():
