@@ -290,7 +290,6 @@ def fetch_chat_by_phone_number():
     try:
         content = request.get_json()
         phone_number = content.get("phone_number")
-
         if phone_number:
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
@@ -298,16 +297,18 @@ def fetch_chat_by_phone_number():
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
                     WHERE phone_number = ?
-                    ORDER BY timestamp ASC
+                    ORDER BY timestamp DESC
                 """
                 cursor.execute(query, phone_number)
-                chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]
+                chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]           
+            chats.reverse()
             return jsonify({"chats": chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 @app.route("/api/save_response", methods=["POST"])
 def save_response():
