@@ -301,7 +301,6 @@ def fetch_chat_by_phone_number():
                 """
                 cursor.execute(query, phone_number)
                 chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]           
-            chats.reverse()
             return jsonify({"chats": chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
