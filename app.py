@@ -298,7 +298,7 @@ def fetch_chat_by_phone_number():
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
                     WHERE phone_number = ?
-                    ORDER BY timestamp DESC
+                    ORDER BY timestamp ASC
                 """
                 cursor.execute(query, phone_number)
                 chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]
