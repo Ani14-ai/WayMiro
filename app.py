@@ -394,18 +394,25 @@ def save_response():
         if phone_number and bot_response:
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
+
+                # Use a placeholder user ID for admin messages
+                admin_user_id = -1  # Use -1 or another placeholder value
+
+                # Insert the message with the placeholder user ID
                 query = """
-                    INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number, user_id)
-                    VALUES ('ADMIN', ?, ?, 0)
+                    INSERT INTO tbWhatsapp_Messages (user_id, user_input, bot_response, phone_number)
+                    VALUES (?, 'ADMIN', ?, ?)
                 """
-                cursor.execute(query, bot_response, phone_number)
+                cursor.execute(query, admin_user_id, bot_response, phone_number)
                 conn.commit()
+
             return jsonify({"status": "success", "message": "Response saved successfully"}), 200
         else:
             return jsonify({"error": "Phone number and bot response are required"}), 400
     except pyodbc.Error as e:
         logging.error(f"Failed to save response: {e}")
         return jsonify({"error": "Failed to save data"}), 500
+
 
 # Views
 
