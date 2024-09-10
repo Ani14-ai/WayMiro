@@ -388,8 +388,8 @@ def fetch_chat_by_phone_number():
         return jsonify({"error": "Failed to retrieve data"}), 500
         
 
-@app.route("/api/fetch_chat", methods=["POST"])
-def fetch_chat_by_phone_number():
+@app.route("/api/fetch_chatv1", methods=["POST"])
+def fetch_chat_by_phone_numberv1():
     try:
         content = request.get_json()
         phone_number = content.get("phone_number")
