@@ -271,14 +271,17 @@ def get_unique_phone_numbers():
     try:
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()
-            query = "SELECT DISTINCT phone_number FROM tbWhatsapp_Messages"
+            # Select unique phone numbers and names from the Users table
+            query = "SELECT phone_number, name FROM Users"
             cursor.execute(query)
-            phone_numbers = [row.phone_number for row in cursor.fetchall()]
-        phone_numbers_json = json.dumps(phone_numbers)
-
+            users = [{"phone_number": row.phone_number, "name": row.name} for row in cursor.fetchall()]
+        
+        # Convert the result to the desired format
+        phone_numbers_json = [user["phone_number"] for user in users]
+        total_phone_numbers = len(phone_numbers_json)
         return jsonify({
-            "phoneNumbersJson": phone_numbers_json,  
-            "totalPhoneNumbers": len(phone_numbers)   
+            "phoneNumbersJson": json.dumps(phone_numbers_json),
+            "totalPhoneNumbers": total_phone_numbers
         }), 200
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
