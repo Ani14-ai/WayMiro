@@ -335,12 +335,12 @@ def fetch_chat_by_phone_number():
 
                 # Fetch the messages for the retrieved user_id, ordered by timestamp ASC
                 message_query = """
-                    SELECT user_input, bot_response, timestamp
+                    SELECT user_input, bot_response, timestamp, user_id
                     FROM tbWhatsapp_Messages
-                    WHERE user_id = ? OR user_id = 0
-                    ORDER BY timestamp DESC
+                    WHERE phone_number = ?
+                    ORDER BY timestamp ASC
                 """
-                cursor.execute(message_query, (user_id,))
+                cursor.execute(message_query, phone_number)
 
                 # Group chats by date
                 chats = []
@@ -354,26 +354,28 @@ def fetch_chat_by_phone_number():
                     if date not in chats_by_date:
                         chats_by_date[date] = []
 
-                    if row.user_input == 'ADMIN':  # If the message is from admin
+                    if row.user_id == -1:
+                        # Admin message, only include bot_response
                         chats_by_date[date].append({
                             "bot_response": row.bot_response,
-                            "time": time  # Only time (hours and minutes) in WhatsApp style
+                            "time": time
                         })
-                    else:  # User message
+                    else:
+                        # User message
                         chats_by_date[date].append({
                             "user_input": row.user_input,
                             "bot_response": row.bot_response,
-                            "time": time  # Only time (hours and minutes) in WhatsApp style
+                            "time": time
                         })
 
                 # Flatten the grouped chats into a list
                 for date, messages in chats_by_date.items():
                     for message in messages:
                         chats.append({
-                            "user_input": message.get('user_input', ''),  # Show user_input if available
-                            "bot_response": message.get('bot_response', ''),  # Show bot_response if available
-                            "date": date,  # Separate date field
-                            "time": message['time']  # Separate time field, formatted in WhatsApp style
+                            "user_input": message.get('user_input'),
+                            "bot_response": message.get('bot_response'),
+                            "date": date,
+                            "time": message['time']
                         })
 
             return jsonify({"chats": chats}), 200
