@@ -439,23 +439,20 @@ def fetch_chat_by_phone_number():
 
                     chats_by_date[date].append(message)
 
-                # Sorting dates in descending order and re-labeling them
-                sorted_dates = sorted(chats_by_date.keys(), reverse=True)
-                labeled_chats = {}
-                for index, date in enumerate(sorted_dates):
-                    labeled_chats[f"date-{index + 1}"] = {
-                        "actual_date": date,   # Adding the actual date
-                        "chats": chats_by_date[date]
-                    }
+                # Formatting the output to have "actual_date" directly associated with chats
+                simplified_response = []
+                for date, messages in chats_by_date.items():
+                    simplified_response.append({
+                        "actual_date": date,
+                        "chats": messages
+                    })
 
-            return jsonify({"dates": labeled_chats}), 200
+            return jsonify({"dates": simplified_response}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
-
-
 
 
 @app.route("/api/save_response", methods=["POST"])
