@@ -34,12 +34,12 @@ def log_chat_to_db(user_input, bot_response, phone_number):
     try:
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()            
-            user_query = "SELECT id FROM tbClient WHERE phone_number = ?"
+            user_query = "SELECT id FROM tbClients WHERE phone_number = ?"
             cursor.execute(user_query, (phone_number,))
             user = cursor.fetchone()
 
             if user is None:
-                insert_user_query = "INSERT INTO tbClient (phone_number) VALUES (?)"
+                insert_user_query = "INSERT INTO tbClients (phone_number) VALUES (?)"
                 cursor.execute(insert_user_query, (phone_number,))
                 conn.commit()
                 cursor.execute(user_query, (phone_number,))
