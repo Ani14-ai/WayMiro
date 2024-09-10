@@ -304,7 +304,7 @@ def get_unique_phone_numbers1():
             query = """
                 SELECT u.phone_number, ISNULL(u.name, u.phone_number) AS display_name,
                        MAX(m.timestamp) AS last_conversation_date
-                FROM Users u
+                FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.id = m.user_id
                 GROUP BY u.phone_number, u.name
             """
