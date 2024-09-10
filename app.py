@@ -279,41 +279,12 @@ def signature_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 @app.route("/api/dashboard", methods=["GET"])
 def get_unique_phone_numbers():
     try:
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()
-
-            # Query to get the name if available, otherwise return phone number
-            query = """
-                SELECT 
-                    CASE 
-                        WHEN name IS NOT NULL AND name != '' THEN name 
-                        ELSE phone_number 
-                    END AS display_name
-                FROM tbClients
-            """
-            cursor.execute(query)
-            display_names = [row.display_name for row in cursor.fetchall()]
-        
-        return jsonify({
-            "phoneNumbersJson": json.dumps(display_names),  # Return as JSON string
-            "totalPhoneNumbers": len(display_names)
-        }), 200
-    except pyodbc.Error as e:
-        logging.error(f"Failed to retrieve unique phone numbers: {e}")
-        return jsonify({"error": "Failed to retrieve data"}), 500
-
-
-
-@app.route("/api/dashboardv1", methods=["GET"])
-def get_unique_phone_numbers1():
-    try:
-        with pyodbc.connect(db_connection_string) as conn:
-            cursor = conn.cursor()
-            
-            # Get the distinct phone numbers and their last conversation date
             query = """
                 SELECT u.phone_number, ISNULL(u.name, u.phone_number) AS display_name,
                        MAX(m.timestamp) AS last_conversation_date
