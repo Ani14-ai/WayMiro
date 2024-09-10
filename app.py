@@ -317,7 +317,7 @@ def fetch_chat_by_phone_number():
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
                     WHERE user_id = ?
-                    ORDER BY timestamp ASC 
+                    ORDER BY timestamp DESC
                 """
                 cursor.execute(message_query, user_id)
                 chats = []
