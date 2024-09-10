@@ -33,15 +33,28 @@ VERSION = "v20.0"
 def log_chat_to_db(user_input, bot_response, phone_number):
     try:
         with pyodbc.connect(db_connection_string) as conn:
-            cursor = conn.cursor()
-            query = """
-                INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number)
-                VALUES (?, ?, ?)
+            cursor = conn.cursor()            
+            user_query = "SELECT id FROM tbClient WHERE phone_number = ?"
+            cursor.execute(user_query, (phone_number,))
+            user = cursor.fetchone()
+
+            if user is None:
+                insert_user_query = "INSERT INTO tbClient (phone_number) VALUES (?)"
+                cursor.execute(insert_user_query, (phone_number,))
+                conn.commit()
+                cursor.execute(user_query, (phone_number,))
+                user = cursor.fetchone()            
+            user_id = user.id
+            insert_message_query = """
+                INSERT INTO Messages (user_input, bot_response, phone_number, user_id)
+                VALUES (?, ?, ?, ?)
             """
-            cursor.execute(query, (user_input, bot_response, phone_number))
+            cursor.execute(insert_message_query, (user_input, bot_response, phone_number, user_id))
             conn.commit()
+
     except pyodbc.Error as e:
         logging.error(f"Failed to log chat to database: {e}")
+
         
 async def send_message(recipient, data):
     headers = {
