@@ -295,13 +295,25 @@ def get_unique_phone_numbers():
             cursor.execute(query)
             users = cursor.fetchall()
 
+            # Prepare the phone numbers JSON with names and phone numbers
             phone_numbers_json = []
             for user in users:
-                phone_numbers_json.append(user.display_name)
+                if user.name:
+                    phone_numbers_json.append({
+                        "phone_number": user.phone_number,
+                        "name": user.name
+                    })
+                else:
+                    phone_numbers_json.append({
+                        "phone_number": user.phone_number
+                    })
             
-            last_conversation_dates = {user.phone_number: user.last_conversation_date.strftime("%Y-%m-%d") 
-                                       if user.last_conversation_date else None 
-                                       for user in users}
+            # Prepare the last conversation dates
+            last_conversation_dates = {
+                user.phone_number: user.last_conversation_date.strftime("%Y-%m-%d") 
+                if user.last_conversation_date else None
+                for user in users
+            }
             
         return jsonify({
             "phoneNumbersJson": json.dumps(phone_numbers_json), 
