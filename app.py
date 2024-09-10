@@ -337,10 +337,10 @@ def fetch_chat_by_phone_number():
                 message_query = """
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
-                    WHERE user_id = ?
+                    WHERE user_id = ? OR user_id = 0
                     ORDER BY timestamp DESC
                 """
-                cursor.execute(message_query, user_id)
+                cursor.execute(message_query, (user_id,))
 
                 # Group chats by date
                 chats = []
@@ -354,18 +354,24 @@ def fetch_chat_by_phone_number():
                     if date not in chats_by_date:
                         chats_by_date[date] = []
 
-                    chats_by_date[date].append({
-                        "user_input": row.user_input,
-                        "bot_response": row.bot_response,
-                        "time": time  # Only time (hours and minutes) in WhatsApp style
-                    })
+                    if row.user_input == 'ADMIN':  # If the message is from admin
+                        chats_by_date[date].append({
+                            "bot_response": row.bot_response,
+                            "time": time  # Only time (hours and minutes) in WhatsApp style
+                        })
+                    else:  # User message
+                        chats_by_date[date].append({
+                            "user_input": row.user_input,
+                            "bot_response": row.bot_response,
+                            "time": time  # Only time (hours and minutes) in WhatsApp style
+                        })
 
                 # Flatten the grouped chats into a list
                 for date, messages in chats_by_date.items():
                     for message in messages:
                         chats.append({
-                            "user_input": message['user_input'],
-                            "bot_response": message['bot_response'],
+                            "user_input": message.get('user_input', ''),  # Show user_input if available
+                            "bot_response": message.get('bot_response', ''),  # Show bot_response if available
                             "date": date,  # Separate date field
                             "time": message['time']  # Separate time field, formatted in WhatsApp style
                         })
@@ -376,8 +382,6 @@ def fetch_chat_by_phone_number():
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
-
-
 
 
 @app.route("/api/save_response", methods=["POST"])
@@ -391,8 +395,8 @@ def save_response():
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
                 query = """
-                    INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number)
-                    VALUES ('ADMIN', ?, ?)
+                    INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number, user_id)
+                    VALUES ('ADMIN', ?, ?, 0)
                 """
                 cursor.execute(query, bot_response, phone_number)
                 conn.commit()
@@ -402,9 +406,6 @@ def save_response():
     except pyodbc.Error as e:
         logging.error(f"Failed to save response: {e}")
         return jsonify({"error": "Failed to save data"}), 500
-
-
-
 
 # Views
 
