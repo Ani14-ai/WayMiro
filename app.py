@@ -324,37 +324,52 @@ def fetch_chat_by_phone_number():
                 cursor = conn.cursor()
 
                 # Get the user_id from the Users table using the provided phone number
-                user_query = "SELECT id FROM tbClients WHERE phone_number = ?"
+                user_query = "SELECT id FROM Users WHERE phone_number = ?"
                 cursor.execute(user_query, phone_number)
                 user = cursor.fetchone()
-                
+
                 if user is None:
                     return jsonify({"error": "Phone number not found"}), 404
 
                 user_id = user.id
 
-                # Fetch the messages for the retrieved user_id
+                # Fetch the messages for the retrieved user_id, ordered by timestamp ASC
                 message_query = """
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
                     WHERE user_id = ?
-                    ORDER BY timestamp DESC
+                    ORDER BY timestamp ASC 
                 """
                 cursor.execute(message_query, user_id)
+
+                # Group chats by date
                 chats = []
+                chats_by_date = {}
                 for row in cursor.fetchall():
                     timestamp = row.timestamp
+                    date = timestamp.strftime("%Y-%m-%d")  # Group by date (e.g., "2024-09-10")
+                    time = timestamp.strftime("%I:%M %p")  # Time format (e.g., "9:15 AM")
 
-                    # Split date and time from the timestamp
-                    date = timestamp.strftime("%Y-%m-%d")  # Example format: "2024-09-10"
-                    time = timestamp.strftime("%I:%M %p")  # Example format: "9:15 AM"
+                    # Append the message to the correct date group
+                    if date not in chats_by_date:
+                        chats_by_date[date] = []
 
-                    chats.append({
+                    chats_by_date[date].append({
                         "user_input": row.user_input,
                         "bot_response": row.bot_response,
-                        "date": date,  # Separate date field
-                        "time": time   # Separate time field, formatted in WhatsApp style
+                        "time": time  # Only time (hours and minutes) in WhatsApp style
                     })
+
+                # Flatten the grouped chats into a list
+                for date, messages in chats_by_date.items():
+                    for message in messages:
+                        chats.append({
+                            "user_input": message['user_input'],
+                            "bot_response": message['bot_response'],
+                            "date": date,  # Separate date field
+                            "time": message['time']  # Separate time field, formatted in WhatsApp style
+                        })
+
             return jsonify({"chats": chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
