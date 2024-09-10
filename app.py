@@ -386,10 +386,10 @@ def fetch_chat_by_phone_number():
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+        
 
-
-@app.route("/api/fetch_chatv1", methods=["POST"])
-def fetch_chat_by_phone_numberv1():
+@app.route("/api/fetch_chat", methods=["POST"])
+def fetch_chat_by_phone_number():
     try:
         content = request.get_json()
         phone_number = content.get("phone_number")
@@ -444,7 +444,7 @@ def fetch_chat_by_phone_numberv1():
                 labeled_chats = {}
                 for index, date in enumerate(sorted_dates):
                     labeled_chats[f"date-{index + 1}"] = {
-                        "date": date,
+                        "actual_date": date,   # Adding the actual date
                         "chats": chats_by_date[date]
                     }
 
