@@ -292,12 +292,12 @@ def get_unique_phone_numbers():
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
 
-
 @app.route("/api/fetch_chat", methods=["POST"])
 def fetch_chat_by_phone_number():
     try:
         content = request.get_json()
         phone_number = content.get("phone_number")
+
         if phone_number:
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
@@ -305,10 +305,24 @@ def fetch_chat_by_phone_number():
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
                     WHERE phone_number = ?
-                    ORDER BY timestamp DESC
+                    ORDER BY timestamp ASC  -- Oldest first for WhatsApp-like behavior
                 """
                 cursor.execute(query, phone_number)
-                chats = [{"user_input": row.user_input, "bot_response": row.bot_response, "timestamp": row.timestamp} for row in cursor.fetchall()]           
+                chats = []
+                for row in cursor.fetchall():
+                    timestamp = row.timestamp
+
+                    # Split date and time from the timestamp
+                    date = timestamp.strftime("%Y-%m-%d")  # Example format: "2024-09-10"
+                    time = timestamp.strftime("%I:%M %p")  # Example format: "9:15 AM"
+
+                    chats.append({
+                        "user_input": row.user_input,
+                        "bot_response": row.bot_response,
+                        "date": date,  # Separate date field
+                        "time": time   # Separate time field, formatted in WhatsApp style
+                    })
+
             return jsonify({"chats": chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
