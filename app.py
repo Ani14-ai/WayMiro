@@ -271,17 +271,22 @@ def get_unique_phone_numbers():
     try:
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()
-            # Select unique phone numbers and names from the Users table
-            query = "SELECT phone_number, name FROM Users"
+
+            # Query to get the name if available, otherwise return phone number
+            query = """
+                SELECT 
+                    CASE 
+                        WHEN name IS NOT NULL AND name != '' THEN name 
+                        ELSE phone_number 
+                    END AS display_name
+                FROM Users
+            """
             cursor.execute(query)
-            users = [{"phone_number": row.phone_number, "name": row.name} for row in cursor.fetchall()]
+            display_names = [row.display_name for row in cursor.fetchall()]
         
-        # Convert the result to the desired format
-        phone_numbers_json = [user["phone_number"] for user in users]
-        total_phone_numbers = len(phone_numbers_json)
         return jsonify({
-            "phoneNumbersJson": json.dumps(phone_numbers_json),
-            "totalPhoneNumbers": total_phone_numbers
+            "phoneNumbersJson": json.dumps(display_names),  # Return as JSON string
+            "totalPhoneNumbers": len(display_names)
         }), 200
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
