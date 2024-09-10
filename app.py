@@ -301,13 +301,25 @@ def fetch_chat_by_phone_number():
         if phone_number:
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
-                query = """
+
+                # Get the user_id from the Users table using the provided phone number
+                user_query = "SELECT id FROM Users WHERE phone_number = ?"
+                cursor.execute(user_query, phone_number)
+                user = cursor.fetchone()
+                
+                if user is None:
+                    return jsonify({"error": "Phone number not found"}), 404
+
+                user_id = user.id
+
+                # Fetch the messages for the retrieved user_id
+                message_query = """
                     SELECT user_input, bot_response, timestamp
                     FROM tbWhatsapp_Messages
-                    WHERE phone_number = ?
-                    ORDER BY timestamp ASC  -- Oldest first for WhatsApp-like behavior
+                    WHERE user_id = ?
+                    ORDER BY timestamp ASC 
                 """
-                cursor.execute(query, phone_number)
+                cursor.execute(message_query, user_id)
                 chats = []
                 for row in cursor.fetchall():
                     timestamp = row.timestamp
@@ -322,13 +334,14 @@ def fetch_chat_by_phone_number():
                         "date": date,  # Separate date field
                         "time": time   # Separate time field, formatted in WhatsApp style
                     })
-
             return jsonify({"chats": chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
+
 
 
 @app.route("/api/save_response", methods=["POST"])
