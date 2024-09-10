@@ -298,31 +298,35 @@ def get_unique_phone_numbers():
             # Prepare the phone numbers JSON with names and phone numbers
             phone_numbers_json = []
             for user in users:
-                if user.name:
+                phone_number = user['phone_number']
+                name = user['display_name']
+                
+                if name and name != phone_number:
                     phone_numbers_json.append({
-                        "phone_number": user.phone_number,
-                        "name": user.name
+                        "phone_number": phone_number,
+                        "name": name
                     })
                 else:
                     phone_numbers_json.append({
-                        "phone_number": user.phone_number
+                        "phone_number": phone_number
                     })
             
             # Prepare the last conversation dates
             last_conversation_dates = {
-                user.phone_number: user.last_conversation_date.strftime("%Y-%m-%d") 
-                if user.last_conversation_date else None
+                user['phone_number']: user['last_conversation_date'].strftime("%Y-%m-%d") 
+                if user['last_conversation_date'] else None
                 for user in users
             }
             
         return jsonify({
-            "phoneNumbersJson": json.dumps(phone_numbers_json), 
+            "phoneNumbersJson": phone_numbers_json, 
             "totalPhoneNumbers": len(phone_numbers_json),
             "lastConversationDates": last_conversation_dates  # Adds the last conversation dates
         }), 200
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 
 @app.route("/api/fetch_chat", methods=["POST"])
