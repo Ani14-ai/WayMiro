@@ -415,6 +415,28 @@ def save_response():
         logging.error(f"Failed to save response: {e}")
         return jsonify({"error": "Failed to save data"}), 500
 
+@app.route("/api/update_name", methods=["POST"])
+def update_name():
+    try:
+        content = request.get_json()
+        phone_number = content.get("phone_number")
+        name = content.get("name")
+        if not phone_number or not name:
+            return jsonify({"error": "Phone number and name are required"}), 400
+
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+            query = "UPDATE tbClients SET name = ? WHERE phone_number = ?"
+            cursor.execute(query, name, phone_number)
+            if cursor.rowcount == 0:
+                return jsonify({"error": "Phone number not found"}), 404
+            conn.commit()        
+        return jsonify({"message": "Name updated successfully"}), 200
+    except pyodbc.Error as e:
+        logging.error(f"Failed to update name: {e}")
+        return jsonify({"error": "Failed to update name"}), 500
+
+
 
 # Views
 
