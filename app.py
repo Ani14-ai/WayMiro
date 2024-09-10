@@ -279,7 +279,7 @@ def get_unique_phone_numbers():
                         WHEN name IS NOT NULL AND name != '' THEN name 
                         ELSE phone_number 
                     END AS display_name
-                FROM Users
+                FROM tbClients
             """
             cursor.execute(query)
             display_names = [row.display_name for row in cursor.fetchall()]
