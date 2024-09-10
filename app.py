@@ -303,7 +303,7 @@ def fetch_chat_by_phone_number():
                 cursor = conn.cursor()
 
                 # Get the user_id from the Users table using the provided phone number
-                user_query = "SELECT id FROM Users WHERE phone_number = ?"
+                user_query = "SELECT id FROM tbClients WHERE phone_number = ?"
                 cursor.execute(user_query, phone_number)
                 user = cursor.fetchone()
                 
