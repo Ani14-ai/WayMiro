@@ -46,7 +46,7 @@ def log_chat_to_db(user_input, bot_response, phone_number):
                 user = cursor.fetchone()            
             user_id = user.id
             insert_message_query = """
-                INSERT INTO Messages (user_input, bot_response, phone_number, user_id)
+                INSERT INTO tbWhatsapp_Messages (user_input, bot_response, phone_number, user_id)
                 VALUES (?, ?, ?, ?)
             """
             cursor.execute(insert_message_query, (user_input, bot_response, phone_number, user_id))
