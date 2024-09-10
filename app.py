@@ -323,7 +323,7 @@ def fetch_chat_by_phone_number():
             with pyodbc.connect(db_connection_string) as conn:
                 cursor = conn.cursor()
 
-                # Get the user_id from the Users table using the provided phone number
+                # Get the user_id from the tbClients table using the provided phone number
                 user_query = "SELECT id FROM tbClients WHERE phone_number = ?"
                 cursor.execute(user_query, phone_number)
                 user = cursor.fetchone()
@@ -333,7 +333,7 @@ def fetch_chat_by_phone_number():
 
                 user_id = user.id
 
-                # Fetch the messages for the retrieved user_id, ordered by timestamp ASC
+                # Fetch the messages for the provided phone number, ordered by timestamp DESC
                 message_query = """
                     SELECT user_input, bot_response, timestamp, user_id
                     FROM tbWhatsapp_Messages
@@ -343,47 +343,34 @@ def fetch_chat_by_phone_number():
                 cursor.execute(message_query, phone_number)
 
                 # Group chats by date
-                chats = []
                 chats_by_date = {}
                 for row in cursor.fetchall():
                     timestamp = row.timestamp
-                    date = timestamp.strftime("%Y-%m-%d")  # Group by date (e.g., "2024-09-10")
+                    date = timestamp.strftime("%d-%m-%Y")  # Group by date (e.g., "09-09-2024")
                     time = timestamp.strftime("%I:%M %p")  # Time format (e.g., "9:15 AM")
+
+                    # Prepare message format based on user_id
+                    message = {
+                        "time": time,
+                        "bot_response": row.bot_response
+                    }
+                    
+                    if row.user_id != -1:
+                        message["user_input"] = row.user_input
 
                     # Append the message to the correct date group
                     if date not in chats_by_date:
                         chats_by_date[date] = []
 
-                    if row.user_id == -1:
-                        # Admin message, only include bot_response
-                        chats_by_date[date].append({
-                            "bot_response": row.bot_response,
-                            "time": time
-                        })
-                    else:
-                        # User message
-                        chats_by_date[date].append({
-                            "user_input": row.user_input,
-                            "bot_response": row.bot_response,
-                            "time": time
-                        })
+                    chats_by_date[date].append(message)
 
-                # Flatten the grouped chats into a list
-                for date, messages in chats_by_date.items():
-                    for message in messages:
-                        chats.append({
-                            "user_input": message.get('user_input'),
-                            "bot_response": message.get('bot_response'),
-                            "date": date,
-                            "time": message['time']
-                        })
-
-            return jsonify({"chats": chats}), 200
+            return jsonify({"Dates": chats_by_date}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
     except pyodbc.Error as e:
         logging.error(f"Failed to fetch chats: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 
 @app.route("/api/save_response", methods=["POST"])
