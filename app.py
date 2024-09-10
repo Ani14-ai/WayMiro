@@ -279,7 +279,6 @@ def signature_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
 @app.route("/api/dashboard", methods=["GET"])
 def get_unique_phone_numbers():
     try:
@@ -298,8 +297,8 @@ def get_unique_phone_numbers():
             # Prepare the phone numbers JSON with names and phone numbers
             phone_numbers_json = []
             for user in users:
-                phone_number = user['phone_number']
-                name = user['display_name']
+                phone_number = user[0]  # phone_number is the first column
+                name = user[1]  # display_name is the second column
                 
                 if name and name != phone_number:
                     phone_numbers_json.append({
@@ -313,8 +312,8 @@ def get_unique_phone_numbers():
             
             # Prepare the last conversation dates
             last_conversation_dates = {
-                user['phone_number']: user['last_conversation_date'].strftime("%Y-%m-%d") 
-                if user['last_conversation_date'] else None
+                user[0]: user[2].strftime("%Y-%m-%d") 
+                if user[2] else None
                 for user in users
             }
             
@@ -326,6 +325,7 @@ def get_unique_phone_numbers():
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 
 
