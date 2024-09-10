@@ -388,8 +388,8 @@ def fetch_chat_by_phone_number():
         return jsonify({"error": "Failed to retrieve data"}), 500
 
 
-@app.route("/api/fetch_chatv1", methods=["POST"])
-def fetch_chat_by_phone_numberV1():
+@app.route("/api/fetch_chat", methods=["POST"])
+def fetch_chat_by_phone_number():
     try:
         content = request.get_json()
         phone_number = content.get("phone_number")
@@ -443,9 +443,12 @@ def fetch_chat_by_phone_numberV1():
                 sorted_dates = sorted(chats_by_date.keys(), reverse=True)
                 labeled_chats = {}
                 for index, date in enumerate(sorted_dates):
-                    labeled_chats[f"Date - {index + 1} ({date})"] = chats_by_date[date]
+                    labeled_chats[f"date-{index + 1}"] = {
+                        "date": date,
+                        "chats": chats_by_date[date]
+                    }
 
-            return jsonify({"Dates": labeled_chats}), 200
+            return jsonify({"dates": labeled_chats}), 200
         else:
             return jsonify({"error": "Phone number is required"}), 400
     except pyodbc.Error as e:
