@@ -327,6 +327,46 @@ def get_unique_phone_numbers():
         return jsonify({"error": "Failed to retrieve data"}), 500
 
 
+@app.route("/api/dashboardv1", methods=["GET"])
+def get_unique_phone_numbersv1():
+    try:
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT u.phone_number, 
+                       ISNULL(u.name, u.phone_number) AS display_name,
+                       MAX(m.timestamp) AS last_conversation_date,
+                       (SELECT TOP 1 bot_response
+                        FROM tbWhatsapp_Messages
+                        WHERE tbWhatsapp_Messages.phone_number = u.phone_number
+                        ORDER BY timestamp DESC) AS last_chat_message
+                FROM tbClients u
+                LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
+                GROUP BY u.phone_number, u.name
+            """
+            cursor.execute(query)
+            users = cursor.fetchall()
+
+            phone_numbers_json = []
+            for user in users:
+                phone_numbers_json.append({
+                    "display_name": user.display_name,
+                    "phone_number": user.phone_number,
+                    "last_conversation_date": user.last_conversation_date.strftime("%Y-%m-%d") 
+                                              if user.last_conversation_date else None,
+                    "last_chat_message": user.last_chat_message
+                })
+            
+        return jsonify({
+            "users": phone_numbers_json, 
+            "totalPhoneNumbers": len(phone_numbers_json)
+        }), 200
+    except pyodbc.Error as e:
+        logging.error(f"Failed to retrieve unique phone numbers: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
+
+
+
 
 
 @app.route("/api/fetch_chatv1", methods=["POST"])
