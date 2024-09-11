@@ -327,8 +327,8 @@ def get_unique_phone_numbers():
         return jsonify({"error": "Failed to retrieve data"}), 500
 
 
-@app.route("/api/dashboard", methods=["GET"])
-def get_unique_phone_numbers():
+@app.route("/api/dashboardv1", methods=["GET"])
+def get_unique_phone_numbersv1():
     try:
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()
