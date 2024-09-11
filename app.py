@@ -529,21 +529,33 @@ def webhook_get():
 @signature_required
 def webhook_post():
     body = request.get_json()
-    if (body.get("entry", [{}])[0]
-        .get("changes", [{}])[0]
-        .get("value", {})
-        .get("statuses")):
-        logging.info("Received a WhatsApp status update.")
-        return jsonify({"status": "ok"}), 200
-    try:
-        if is_valid_whatsapp_message(body):
-            process_whatsapp_message(body)
+    logging.info(f"Webhook 1 received request: {body}")
+
+    business_phone_number_id = body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("metadata", {}).get("phone_number_id")
+
+    # Check if the phone_number_id matches the specific one (replace 'your_phone_number_id_1' with the actual ID)
+    if business_phone_number_id == PHONE_NUMBER_ID_1:
+        if (body.get("entry", [{}])[0]
+            .get("changes", [{}])[0]
+            .get("value", {})
+            .get("statuses")):
+            logging.info("Webhook 1: Received a WhatsApp status update.")
             return jsonify({"status": "ok"}), 200
-        else:
-            return jsonify({"status": "error", "message": "Not a WhatsApp API event"}), 404
-    except json.JSONDecodeError:
-        logging.error("Failed to decode JSON")
-        return jsonify({"status": "error", "message": "Invalid JSON provided"}), 400
+        
+        try:
+            if is_valid_whatsapp_message(body):
+                process_whatsapp_message(body)
+                return jsonify({"status": "ok"}), 200
+            else:
+                return jsonify({"status": "error", "message": "Not a WhatsApp API event"}), 404
+        except json.JSONDecodeError:
+            logging.error("Failed to decode JSON")
+            return jsonify({"status": "error", "message": "Invalid JSON provided"}), 400
+    else:
+        # Log and ignore the event if the phone_number_id does not match
+        logging.info("Webhook 1: Ignored event due to unmatched phone_number_id.")
+        return jsonify({"status": "ignored"}), 200
+
 
 import subprocess
 import threading
