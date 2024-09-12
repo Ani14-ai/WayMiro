@@ -288,11 +288,11 @@ def get_unique_phone_numbers():
                 SELECT u.phone_number, 
                        ISNULL(u.name, u.phone_number) AS display_name,
                        MAX(m.timestamp) AS last_conversation_date,
-                       (SELECT TOP 1 user_input
+                       (SELECT TOP 1 bot_response
                         FROM tbWhatsapp_Messages
                         WHERE tbWhatsapp_Messages.phone_number = u.phone_number
-                        AND tbWhatsapp_Messages.user_input IS NOT NULL
-                        ORDER BY timestamp DESC) AS last_user_message
+                        AND tbWhatsapp_Messages.bot_response IS NOT NULL
+                        ORDER BY timestamp DESC) AS last_bot_response
                 FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
                 GROUP BY u.phone_number, u.name
@@ -306,28 +306,23 @@ def get_unique_phone_numbers():
             for user in users:
                 # Store the last conversation date and other details
                 last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%Y-%m-%d") if user.last_conversation_date else None
-
+                
                 user_info = {
                     "phone_number": user.phone_number,
-                    "last_user_message": user.last_user_message
+                    "last_bot_response": user.last_bot_response
                 }
                 
                 # Include name only if it's not null
                 if user.display_name != user.phone_number:
                     user_info["name"] = user.display_name
-
+                
                 phone_numbers_json.append(user_info)
-
-            # Sort the lastConversationDates dictionary by date, with the latest date first
-            sorted_last_conversation_dates = {
-                k: v for k, v in sorted(last_conversation_dates.items(), key=lambda item: item[1], reverse=True)
-            }
-
-            # Also sort phoneNumbersJson by the same order as lastConversationDates
-            sorted_phone_numbers_json = sorted(phone_numbers_json, key=lambda x: last_conversation_dates[x["phone_number"]], reverse=True)
+            
+            # Sort the phone numbers by last conversation date (latest first)
+            sorted_phone_numbers_json = sorted(phone_numbers_json, key=lambda x: last_conversation_dates[x['phone_number']], reverse=True)
 
         return jsonify({
-            "lastConversationDates": sorted_last_conversation_dates,
+            "lastConversationDates": dict(sorted(last_conversation_dates.items(), key=lambda item: item[1], reverse=True)),
             "phoneNumbersJson": sorted_phone_numbers_json,
             "totalPhoneNumbers": len(phone_numbers_json)
         }), 200
