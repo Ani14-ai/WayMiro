@@ -296,8 +296,6 @@ def get_unique_phone_numbers():
                 FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
                 GROUP BY u.phone_number, u.name
-                HAVING MAX(m.timestamp) IS NOT NULL
-                ORDER BY MAX(m.timestamp) DESC
             """
             cursor.execute(query)
             users = cursor.fetchall()
@@ -308,7 +306,7 @@ def get_unique_phone_numbers():
             for user in users:
                 # Store the last conversation date and other details
                 last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%Y-%m-%d") if user.last_conversation_date else None
-                
+
                 user_info = {
                     "phone_number": user.phone_number,
                     "last_user_message": user.last_user_message
@@ -317,12 +315,20 @@ def get_unique_phone_numbers():
                 # Include name only if it's not null
                 if user.display_name != user.phone_number:
                     user_info["name"] = user.display_name
-                
+
                 phone_numbers_json.append(user_info)
 
+            # Sort the lastConversationDates dictionary by date, with the latest date first
+            sorted_last_conversation_dates = {
+                k: v for k, v in sorted(last_conversation_dates.items(), key=lambda item: item[1], reverse=True)
+            }
+
+            # Also sort phoneNumbersJson by the same order as lastConversationDates
+            sorted_phone_numbers_json = sorted(phone_numbers_json, key=lambda x: last_conversation_dates[x["phone_number"]], reverse=True)
+
         return jsonify({
-            "lastConversationDates": last_conversation_dates,
-            "phoneNumbersJson": phone_numbers_json,
+            "lastConversationDates": sorted_last_conversation_dates,
+            "phoneNumbersJson": sorted_phone_numbers_json,
             "totalPhoneNumbers": len(phone_numbers_json)
         }), 200
     except pyodbc.Error as e:
