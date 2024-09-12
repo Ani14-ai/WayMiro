@@ -624,6 +624,58 @@ def get_latest_chat():
         return jsonify({"error": "Failed to retrieve data"}), 500
 
 
+@app.route("/api/search_contact", methods=["GET"])
+def search_contact():
+    try:
+        search_term = request.args.get('query', '').strip()
+
+        if not search_term:
+            return jsonify({"error": "Search term is required"}), 400
+
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+
+            # Query to search for users by name or phone number
+            search_query = """
+                SELECT u.phone_number,
+                       ISNULL(u.name, u.phone_number) AS display_name,
+                       MAX(m.timestamp) AS last_conversation_date
+                FROM tbClients u
+                LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
+                WHERE u.phone_number LIKE ? OR u.name LIKE ?
+                GROUP BY u.phone_number, u.name
+                ORDER BY MAX(m.timestamp) DESC
+            """
+            # Using the search term for both name and phone number search
+            search_term_with_wildcards = f"%{search_term}%"
+            cursor.execute(search_query, (search_term_with_wildcards, search_term_with_wildcards))
+            search_results = cursor.fetchall()
+
+            if not search_results:
+                return jsonify({"message": "No contacts found"}), 404
+
+            contacts_json = []
+            for result in search_results:
+                contact_info = {
+                    "phone_number": result.phone_number,
+                    "last_conversation_date": result.last_conversation_date.strftime("%Y-%m-%d") if result.last_conversation_date else None
+                }
+
+                if result.display_name != result.phone_number:
+                    contact_info["name"] = result.display_name
+
+                contacts_json.append(contact_info)
+
+            return jsonify({
+                "searchResults": contacts_json,
+                "totalResults": len(contacts_json)
+            }), 200
+
+    except pyodbc.Error as e:
+        logging.error(f"Failed to search contacts: {e}")
+        return jsonify({"error": "Failed to search data"}), 500
+
+
 
 
 # Views
