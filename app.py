@@ -560,6 +560,71 @@ def update_name():
         return jsonify({"error": "Failed to update name"}), 500
 
 
+@app.route("/api/latest_chat", methods=["GET"])
+def get_latest_chat():
+    try:
+        with pyodbc.connect(db_connection_string) as conn:
+            cursor = conn.cursor()
+            
+            # Get the phone number with the most recent interaction (latest last_conversation_date)
+            query = """
+                SELECT TOP 1 u.phone_number
+                FROM tbClients u
+                LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
+                GROUP BY u.phone_number
+                ORDER BY MAX(m.timestamp) DESC
+            """
+            cursor.execute(query)
+            latest_user = cursor.fetchone()
+
+            if latest_user is None:
+                return jsonify({"error": "No chats found"}), 404
+            
+            latest_phone_number = latest_user.phone_number
+
+            # Fetch the entire chat history for this phone number
+            chat_query = """
+                SELECT user_input, bot_response, timestamp
+                FROM tbWhatsapp_Messages
+                WHERE phone_number = ?
+                ORDER BY timestamp ASC
+            """
+            cursor.execute(chat_query, latest_phone_number)
+            chat_history = cursor.fetchall()
+
+            if not chat_history:
+                return jsonify({"error": "No chat history found for this user"}), 404
+
+            # Format the chat history by date and time
+            chats_by_date = {}
+            for chat in chat_history:
+                timestamp = chat.timestamp
+                date = timestamp.strftime("%d-%m-%Y")  # Group by date (e.g., "09-09-2024")
+                time = timestamp.strftime("%I:%M %p")  # Time format (e.g., "9:15 AM")
+
+                message = {
+                    "time": time,
+                    "bot_response": chat.bot_response
+                }
+
+                if chat.user_input:
+                    message["user_input"] = chat.user_input
+
+                if date not in chats_by_date:
+                    chats_by_date[date] = []
+
+                chats_by_date[date].append(message)
+
+            return jsonify({
+                "phone_number": latest_phone_number,
+                "chat_history": chats_by_date
+            }), 200
+    except pyodbc.Error as e:
+        logging.error(f"Failed to retrieve chat history: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
+
+
+
 
 # Views
 
