@@ -292,10 +292,11 @@ def get_unique_phone_numbers():
                         FROM tbWhatsapp_Messages
                         WHERE tbWhatsapp_Messages.phone_number = u.phone_number
                         AND tbWhatsapp_Messages.user_input IS NOT NULL
-                        ORDER BY timestamp ASC) AS first_user_message
+                        ORDER BY timestamp DESC) AS last_user_message
                 FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
                 GROUP BY u.phone_number, u.name
+                ORDER BY MAX(m.timestamp) DESC
             """
             cursor.execute(query)
             users = cursor.fetchall()
@@ -308,7 +309,7 @@ def get_unique_phone_numbers():
                 
                 user_info = {
                     "phone_number": user.phone_number,
-                    "first_user_message": user.first_user_message
+                    "last_user_message": user.last_user_message
                 }
                 
                 # Include name only if it's not null
