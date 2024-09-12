@@ -305,6 +305,7 @@ def get_unique_phone_numbers():
             last_conversation_dates = {}
             
             for user in users:
+                # Create the dictionary for last conversation dates and phone numbers
                 last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%Y-%m-%d") if user.last_conversation_date else None
                 
                 user_info = {
@@ -317,9 +318,13 @@ def get_unique_phone_numbers():
                     user_info["name"] = user.display_name
                 
                 phone_numbers_json.append(user_info)
-            
+
+            # Sort last conversation dates by date in descending order
+            sorted_last_conversation_dates = dict(sorted(last_conversation_dates.items(), 
+                                                         key=lambda x: x[1], reverse=True))
+
         return jsonify({
-            "lastConversationDates": last_conversation_dates,
+            "lastConversationDates": sorted_last_conversation_dates,
             "phoneNumbersJson": phone_numbers_json,
             "totalPhoneNumbers": len(phone_numbers_json)
         }), 200
