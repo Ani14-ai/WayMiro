@@ -296,6 +296,7 @@ def get_unique_phone_numbers():
                 FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
                 GROUP BY u.phone_number, u.name
+                HAVING MAX(m.timestamp) IS NOT NULL
                 ORDER BY MAX(m.timestamp) DESC
             """
             cursor.execute(query)
@@ -303,9 +304,9 @@ def get_unique_phone_numbers():
 
             phone_numbers_json = []
             last_conversation_dates = {}
-            
+
             for user in users:
-                # Create the dictionary for last conversation dates and phone numbers
+                # Store the last conversation date and other details
                 last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%Y-%m-%d") if user.last_conversation_date else None
                 
                 user_info = {
@@ -319,18 +320,15 @@ def get_unique_phone_numbers():
                 
                 phone_numbers_json.append(user_info)
 
-            # Sort last conversation dates by date in descending order
-            sorted_last_conversation_dates = dict(sorted(last_conversation_dates.items(), 
-                                                         key=lambda x: x[1], reverse=True))
-
         return jsonify({
-            "lastConversationDates": sorted_last_conversation_dates,
+            "lastConversationDates": last_conversation_dates,
             "phoneNumbersJson": phone_numbers_json,
             "totalPhoneNumbers": len(phone_numbers_json)
         }), 200
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
 
 
 
