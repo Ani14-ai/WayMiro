@@ -304,8 +304,8 @@ def get_unique_phone_numbers():
             last_conversation_dates = {}
 
             for user in users:
-                # Store the last conversation date and other details
-                last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%Y-%m-%d") if user.last_conversation_date else None
+                # Store the last conversation date in dd-mm format (without the year)
+                last_conversation_dates[user.phone_number] = user.last_conversation_date.strftime("%d-%m") if user.last_conversation_date else None
                 
                 user_info = {
                     "phone_number": user.phone_number,
@@ -329,7 +329,6 @@ def get_unique_phone_numbers():
     except pyodbc.Error as e:
         logging.error(f"Failed to retrieve unique phone numbers: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
-
 
 
 
