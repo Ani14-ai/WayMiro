@@ -624,60 +624,68 @@ def get_latest_chat():
 
 
 @app.route("/api/search_contact", methods=["GET"])
-def search_contact():
+def search_clients():
     try:
-        search_term = request.args.get('query', '').strip()
+        # Get the search query from the URL parameters
+        search_query = request.args.get("query", "")
 
-        if not search_term:
-            return jsonify({"error": "Search term is required"}), 400
+        if not search_query:
+            return jsonify({"error": "Search query is required"}), 400
 
         with pyodbc.connect(db_connection_string) as conn:
             cursor = conn.cursor()
-
-            # Query to search for users by name or phone number
-            search_query = """
-                SELECT u.phone_number,
+            
+            # SQL query to search for clients by name or phone number
+            query = """
+                SELECT u.phone_number, 
                        ISNULL(u.name, u.phone_number) AS display_name,
-                       MAX(m.timestamp) AS last_conversation_date
+                       MAX(m.timestamp) AS last_conversation_date,
+                       (SELECT TOP 1 bot_response
+                        FROM tbWhatsapp_Messages
+                        WHERE tbWhatsapp_Messages.phone_number = u.phone_number
+                        AND tbWhatsapp_Messages.bot_response IS NOT NULL
+                        ORDER BY timestamp DESC) AS last_bot_response
                 FROM tbClients u
                 LEFT JOIN tbWhatsapp_Messages m ON u.phone_number = m.phone_number
-                WHERE u.phone_number LIKE ? OR u.name LIKE ?
+                WHERE u.name LIKE ? OR u.phone_number LIKE ?
                 GROUP BY u.phone_number, u.name
-                ORDER BY MAX(m.timestamp) DESC
             """
-            # Using the search term for both name and phone number search
-            search_term_with_wildcards = f"%{search_term}%"
-            cursor.execute(search_query, (search_term_with_wildcards, search_term_with_wildcards))
-            search_results = cursor.fetchall()
+            cursor.execute(query, f"%{search_query}%", f"%{search_query}%")
+            users = cursor.fetchall()
 
-            if not search_results:
-                return jsonify({"message": "No contacts found"}), 404
+            phone_numbers_json = []
+            last_conversation_dates = {}
 
-            contacts_json = []
-            for result in search_results:
-                contact_info = {
-                    "phone_number": result.phone_number,
-                    "last_conversation_date": result.last_conversation_date.strftime("%Y-%m-%d") if result.last_conversation_date else None
+            for user in users:
+                # Format the last conversation date to 'dd-mm' (exclude the year)
+                last_conversation_date = user.last_conversation_date.strftime("%d-%m") if user.last_conversation_date else None
+                
+                # Store the details in the desired format
+                last_conversation_dates[user.phone_number] = last_conversation_date
+                
+                user_info = {
+                    "phone_number": user.phone_number,
+                    "last_bot_response": user.last_bot_response
                 }
+                
+                # Include name only if it's not null
+                if user.display_name != user.phone_number:
+                    user_info["name"] = user.display_name
+                
+                phone_numbers_json.append(user_info)
 
-                if result.display_name != result.phone_number:
-                    contact_info["name"] = result.display_name
+            # Sort the results by the last conversation date (latest first)
+            sorted_phone_numbers_json = sorted(phone_numbers_json, key=lambda x: last_conversation_dates[x['phone_number']], reverse=True)
 
-                contacts_json.append(contact_info)
-
-            return jsonify({
-                "searchResults": contacts_json,
-                "totalResults": len(contacts_json)
-            }), 200
-
+        return jsonify({
+            "lastConversationDates": dict(sorted(last_conversation_dates.items(), key=lambda item: item[1], reverse=True)),
+            "phoneNumbersJson": sorted_phone_numbers_json,
+            "totalPhoneNumbers": len(phone_numbers_json)
+        }), 200
     except pyodbc.Error as e:
-        logging.error(f"Failed to search contacts: {e}")
-        return jsonify({"error": "Failed to search data"}), 500
+        logging.error(f"Failed to search clients: {e}")
+        return jsonify({"error": "Failed to retrieve data"}), 500
 
-
-
-
-# Views
 
 @app.route("/webhook", methods=["GET"])
 def webhook_get():
